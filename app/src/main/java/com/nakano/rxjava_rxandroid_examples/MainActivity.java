@@ -12,7 +12,7 @@ import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 
@@ -27,15 +27,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        // Incorrect Usage of distinct()
 //        Observable<Task> taskObservable = Observable
 //                .fromIterable(DataSource.createTasksList())
-//                .distinct(new Function<Task, Task>() { // <--- WRONG
-//                    @Override
-//                    public Task apply(Task task) throws Exception {
-//                        return task;
-//                    }
-//                })
+//                .take(3)
 //                .subscribeOn(Schedulers.io())
 //                .observeOn(AndroidSchedulers.mainThread());
 //
@@ -58,13 +52,12 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        });
 
-        // Correct Usage of distinct()
         Observable<Task> taskObservable = Observable
                 .fromIterable(DataSource.createTasksList())
-                .distinct(new Function<Task, String>() { // <--- CORRECT
+                .takeWhile(new Predicate<Task>() {
                     @Override
-                    public String apply(Task task) throws Exception {
-                        return task.getDescription();
+                    public boolean test(Task task) throws Exception {
+                        return task.isComplete();
                     }
                 })
                 .subscribeOn(Schedulers.io())
@@ -75,14 +68,17 @@ public class MainActivity extends AppCompatActivity {
             public void onSubscribe(Disposable d) {
 
             }
+
             @Override
             public void onNext(Task task) {
                 Log.d(TAG, "onNext: " + task.getDescription());
             }
+
             @Override
             public void onError(Throwable e) {
 
             }
+
             @Override
             public void onComplete() {
 
