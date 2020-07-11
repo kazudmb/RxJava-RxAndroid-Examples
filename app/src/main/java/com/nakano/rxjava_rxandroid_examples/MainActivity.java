@@ -12,7 +12,7 @@ import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Predicate;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
 
@@ -27,13 +27,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+//        // Incorrect Usage of distinct()
 //        Observable<Task> taskObservable = Observable
 //                .fromIterable(DataSource.createTasksList())
-//                .filter(new Predicate<Task>() {
+//                .distinct(new Function<Task, Task>() { // <--- WRONG
 //                    @Override
-//                    public boolean test(Task task) throws Exception {
-//                        Log.d(TAG, "test: " + Thread.currentThread().getName());
-//                        return task.getDescription().equals("Walk the dog");
+//                    public Task apply(Task task) throws Exception {
+//                        return task;
 //                    }
 //                })
 //                .subscribeOn(Schedulers.io())
@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //            @Override
 //            public void onNext(Task task) {
-//                Log.d(TAG, "onNext: This task matches the description: " + task.getDescription());
+//                Log.d(TAG, "onNext: " + task.getDescription());
 //            }
 //            @Override
 //            public void onError(Throwable e) {
@@ -58,13 +58,13 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        });
 
+        // Correct Usage of distinct()
         Observable<Task> taskObservable = Observable
                 .fromIterable(DataSource.createTasksList())
-                .filter(new Predicate<Task>() {
+                .distinct(new Function<Task, String>() { // <--- CORRECT
                     @Override
-                    public boolean test(Task task) throws Exception {
-                        Log.d(TAG, "test: " + Thread.currentThread().getName());
-                        return task.isComplete();
+                    public String apply(Task task) throws Exception {
+                        return task.getDescription();
                     }
                 })
                 .subscribeOn(Schedulers.io())
@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public void onNext(Task task) {
-                Log.d(TAG, "onNext: This is a completed task: " + task.getDescription());
+                Log.d(TAG, "onNext: " + task.getDescription());
             }
             @Override
             public void onError(Throwable e) {
