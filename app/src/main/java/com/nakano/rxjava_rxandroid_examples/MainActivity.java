@@ -5,130 +5,95 @@ import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.nakano.rxjava_rxandroid_examples.models.Task;
-import com.nakano.rxjava_rxandroid_examples.util.DataSource;
+import com.jakewharton.rxbinding3.view.RxView;
 
-import io.reactivex.Observable;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
-import io.reactivex.schedulers.Schedulers;
+import kotlin.Unit;
 
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
 
-//    private CompositeDisposable disposable = new CompositeDisposable();
+    private CompositeDisposable disposables = new CompositeDisposable();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        Observable<String> extractDescriptionObservable = Observable
+//        // Create an Observable
+//        Observable<Task> taskObservable = Observable
 //                .fromIterable(DataSource.createTasksList())
-//                .subscribeOn(Schedulers.io())
-//                .map(extractDescriptionFunction)
-//                .observeOn(AndroidSchedulers.mainThread());
+//                .subscribeOn(Schedulers.io());
 //
-//        extractDescriptionObservable.subscribe(new Observer<String>() {
-//            @Override
-//            public void onSubscribe(Disposable d) {
-//            }
-//            @Override
-//            public void onNext(String s) {
-//                Log.d(TAG, "onNext: extracted description: " + s);
-//            }
-//            @Override
-//            public void onError(Throwable e) {
-//            }
-//            @Override
-//            public void onComplete() {
-//            }
-//        });
-
-//        Observable<String> extractDescriptionObservable = Observable
-//                .fromIterable(DataSource.createTasksList())
-//                .subscribeOn(Schedulers.io())
-//                .map(extractDescriptionFunction)
-//                .observeOn(AndroidSchedulers.mainThread());
+//        taskObservable
+//                .buffer(2) // Apply the Buffer() operator
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribe(new Observer<List<Task>>() { // Subscribe and view the emitted results
+//                    @Override
+//                    public void onSubscribe(Disposable d) {
+//                    }
 //
-//        extractDescriptionObservable.subscribe(new Observer<String>() {
-//            @Override
-//            public void onSubscribe(Disposable d) {
-//            }
-//            @Override
-//            public void onNext(String s) {
-//                Log.d(TAG, "onNext: extracted description: " + s);
-//            }
-//            @Override
-//            public void onError(Throwable e) {
-//            }
-//            @Override
-//            public void onComplete() {
-//            }
-//        });
+//                    @Override
+//                    public void onNext(List<Task> tasks) {
+//                        Log.d(TAG, "onNext: bundle results: -------------------");
+//                        for (Task task : tasks) {
+//                            Log.d(TAG, "onNext: " + task.getDescription());
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void onError(Throwable e) {
+//                    }
+//
+//                    @Override
+//                    public void onComplete() {
+//                    }
+//                });
 
-        Observable<Task> mappedObservable = Observable
-                .fromIterable(DataSource.createTasksList())
-                .subscribeOn(Schedulers.io())
-                .map(new Function<Task, Task>() {
+        // detect clicks to a button
+        RxView.clicks(findViewById(R.id.button))
+                .map(new Function<Unit, Integer>() { // convert the detected clicks to an integer
                     @Override
-                    public Task apply(Task task) throws Exception {
-                        task.setComplete(true);
-                        return task;
+                    public Integer apply(Unit unit) throws Exception {
+                        return 1;
                     }
                 })
-                .observeOn(AndroidSchedulers.mainThread());
+                .buffer(4, TimeUnit.SECONDS) // capture all the clicks during a 4 second interval
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<List<Integer>>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        disposables.add(d); // add to disposables to you can clear in onDestroy
+                    }
+                    @Override
+                    public void onNext(List<Integer> integers) {
+                        Log.d(TAG, "onNext: You clicked " + integers.size() + " times in 4 seconds!");
+                    }
+                    @Override
+                    public void onError(Throwable e) {
 
-        // subscribe to the Observable and view the emitted results
-        mappedObservable.subscribe(new Observer<Task>() {
-            @Override
-            public void onSubscribe(Disposable d) {
+                    }
+                    @Override
+                    public void onComplete() {
 
-            }
-
-            @Override
-            public void onNext(Task task) {
-                Log.d(TAG, "onNext: mapped: " + task.getDescription());
-            }
-
-            @Override
-            public void onError(Throwable e) {
-
-            }
-
-            @Override
-            public void onComplete() {
-
-            }
-        });
+                    }
+                });
     }
-
-//    Function<Task, String> extractDescriptionFunction = new Function<Task, String>() {
-//        @Override
-//        public String apply(Task task) throws Exception {
-//            Log.d(TAG, "apply: doing work on thread: " + Thread.currentThread().getName());
-//            return task.getDescription();
-//        }
-//    };
-
-//    Function<Task, String> extractDescriptionFunction = new Function<Task, String>() {
-//        @Override
-//        public String apply(Task task) throws Exception {
-//            Log.d(TAG, "apply: doing work on thread: " + Thread.currentThread().getName());
-//            return task.getDescription();
-//        }
-//    };
-
 
 
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy: called.");
         super.onDestroy();
-//        disposable.clear();
+        disposables.clear();
     }
 }

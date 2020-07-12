@@ -32,6 +32,7 @@ dependencies {
 
     def rxjava_version = '2.2.7'
     def rxandroid_version = '2.1.1'
+    def rxbinding_version = "3.0.0-alpha2"
 
     // RxJava
     implementation "io.reactivex.rxjava2:rxjava:$rxjava_version"
@@ -41,4 +42,7 @@ dependencies {
 
     // RxJava math
     implementation 'io.reactivex:rxjava-math:1.0.0'
+
+    // Rx Binding Library
+    implementation "com.jakewharton.rxbinding3:rxbinding:$rxbinding_version"
 }
