@@ -2,19 +2,19 @@ package com.nakano.rxjava_rxandroid_examples;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SearchView;
+
+import com.jakewharton.rxbinding3.view.RxView;
 
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
+import kotlin.Unit;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -22,73 +22,47 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     //ui
-    private SearchView searchView;
+    private Button button;
 
     // vars
     private CompositeDisposable disposables = new CompositeDisposable();
-    private long timeSinceLastRequest; // for log printouts only. Not part of logic.
+    private long timeSinceLastRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        searchView = findViewById(R.id.search_view);
+        button = findViewById(R.id.button);
 
         timeSinceLastRequest = System.currentTimeMillis();
 
-        // create the Observable
-        Observable<String> observableQueryText = Observable
-                .create(new ObservableOnSubscribe<String>() {
+        // Set a click listener to the button with RxBinding Library
+        RxView.clicks(button)
+                .throttleFirst(500, TimeUnit.MILLISECONDS) // Throttle the clicks so 500 ms must pass before registering a new click
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Unit>() {
                     @Override
-                    public void subscribe(final ObservableEmitter<String> emitter) throws Exception {
-
-                        // Listen for text input into the SearchView
-                        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                            @Override
-                            public boolean onQueryTextSubmit(String query) {
-                                return false;
-                            }
-
-                            @Override
-                            public boolean onQueryTextChange(final String newText) {
-                                if(!emitter.isDisposed()){
-                                    emitter.onNext(newText); // Pass the query to the emitter
-                                }
-                                return false;
-                            }
-                        });
+                    public void onSubscribe(Disposable d) {
+                        disposables.add(d);
                     }
-                })
-                .debounce(500, TimeUnit.MILLISECONDS) // Apply Debounce() operator to limit requests
-                .subscribeOn(Schedulers.io());
+                    @Override
+                    public void onNext(Unit unit) {
+                        Log.d(TAG, "onNext: time since last clicked: " + (System.currentTimeMillis() - timeSinceLastRequest));
+                        someMethod(); // Execute some method when a click is registered
+                    }
+                    @Override
+                    public void onError(Throwable e) {
+                    }
+                    @Override
+                    public void onComplete() {
+                    }
+                });
 
-        // Subscribe an Observer
-        observableQueryText.subscribe(new Observer<String>() {
-            @Override
-            public void onSubscribe(Disposable d) {
-                disposables.add(d);
-            }
-            @Override
-            public void onNext(String s) {
-                Log.d(TAG, "onNext: time  since last request: " + (System.currentTimeMillis() - timeSinceLastRequest));
-                Log.d(TAG, "onNext: search query: " + s);
-                timeSinceLastRequest = System.currentTimeMillis();
-
-                // method for sending a request to the server
-                sendRequestToServer(s);
-            }
-            @Override
-            public void onError(Throwable e) {
-            }
-            @Override
-            public void onComplete() {
-            }
-        });
     }
 
-    // Fake method for sending a request to the server
-    private void sendRequestToServer(String query){
-        // do nothing
+    private void someMethod(){
+        timeSinceLastRequest = System.currentTimeMillis();
+        // do something
     }
 
     @Override
